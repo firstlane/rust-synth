@@ -1,13 +1,18 @@
-extern crate device_query;
+use device_query::{DeviceEvents, DeviceState};
 
-use device_query::{DeviceEvents, DeviceQuery, DeviceState, MouseState, Keycode};
+pub fn query_keys() {
+    loop {
+        let device_state = DeviceState::new();
+        let _guard = device_state.on_key_down(|key| {
 
-fn query_keys() {
-    let device_state = DeviceEvents
-    let guard = device_state.on_key_down(|key| {
+        });
+        let _guard = device_state.on_key_up(|key| {
 
-    });
-    let guard = device_state.on_key_up(|key| {
+        });
+    }
+}
 
-    });
+pub struct KeyboardEvent {
+    key: device_query::Keycode,
+    on: bool,
 }

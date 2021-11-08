@@ -3,6 +3,8 @@ extern crate clap;
 extern crate cpal;
 extern crate device_query;
 
+mod midi;
+
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Data, Sample, SampleFormat};
 use device_query::{DeviceQuery, DeviceState, MouseState, Keycode};
@@ -12,12 +14,12 @@ fn main() -> Result<(), anyhow::Error> {
     let device = host.default_output_device()
                      .expect("no output device available");
 
-   let mut supported_configs_range = device.supported_output_configs()
-                                           .expect("error while querying configs");
-   let supported_config = supported_configs_range.next()
-       .expect("no supported config?!")
-       .with_max_sample_rate();
-    let sample_format = supported_config.sample_format();
+//    let mut supported_configs_range = device.supported_output_configs()
+//                                            .expect("error while querying configs");
+//    let supported_config = supported_configs_range.next()
+//        .expect("no supported config?!")
+//        .with_max_sample_rate();
+//     let sample_format = supported_config.sample_format();
     let config = device.default_output_config().unwrap();
 
     match config.sample_format() {
@@ -28,7 +30,6 @@ fn main() -> Result<(), anyhow::Error> {
 }
 
 pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Result<(), anyhow::Error>
-//where T: cpal::Sample
 {
     let err_fn = |err| eprintln!("an error occurrred on the output audio stream: {}", err);
 
@@ -39,6 +40,8 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
         sample_clock = (sample_clock + 1.0) % sample_rate;
         (sample_clock * 440.0 * 2.0 * std::f32::consts::PI / sample_rate).sin()
     };
+
+    let (sender, receiver): (SyncSender<dsp::KeyboardEvent, Receiver<dsp::KeyboardEvent>) = std::sync::mpsc::sync_channel(1024);
 
     let stream = device.build_output_stream(
         config,
