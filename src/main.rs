@@ -4,10 +4,14 @@ extern crate cpal;
 extern crate device_query;
 
 mod midi;
+mod dsp;
+mod synth;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Data, Sample, SampleFormat};
 use device_query::{DeviceQuery, DeviceState, MouseState, Keycode};
+
+use std::sync::mpsc;
 
 fn main() -> Result<(), anyhow::Error> {
     let host = cpal::default_host();
@@ -41,7 +45,13 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
         (sample_clock * 440.0 * 2.0 * std::f32::consts::PI / sample_rate).sin()
     };
 
-    let (sender, receiver): (SyncSender<dsp::KeyboardEvent, Receiver<dsp::KeyboardEvent>) = std::sync::mpsc::sync_channel(1024);
+    let (midi_tx, midi_rx) = mpsc::sync_channel::<midi::KeyboardEvent>(1024);
+
+    let midi_listen_thread = std::thread::spawn(move || {
+        midi_listen(midi_tx);
+    });
+
+    let synth = 
 
     let stream = device.build_output_stream(
         config,
@@ -64,5 +74,24 @@ fn write_data<T: Sample>(data: &mut [T], channels: usize, next_sample: &mut dyn 
         for sample in frame.iter_mut() {
             *sample = value;
         }
+    }
+}
+
+fn midi_listen(midi_sender: mpsc::SyncSender<midi::KeyboardEvent>) {
+    let device_state = DeviceState::new();
+    let _guard = device_state.on_key_down(|key| {
+        midi_sender.send(midi::KeyboardEvent{
+            key: key,
+            on: true,
+        });
+    });
+    let _guard = device_state.on_key_up(|key| {
+        midi_sender.send(midi::KeyboardEvent{
+            key: key,
+            on: false,
+        });
+    });
+
+    loop {
     }
 }

@@ -1,9 +1,9 @@
-struct Signal {
-    left_phase: f64,
-    right_phase: f64,
+pub struct Signal {
+    pub left_phase: f64,
+    pub right_phase: f64,
 }
 
-enum Waveform {
+pub enum Waveform {
     Sine,
     Square,
     Saw,
