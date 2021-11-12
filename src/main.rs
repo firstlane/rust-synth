@@ -9,7 +9,7 @@ mod synth;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Data, Sample, SampleFormat};
-use device_query::{DeviceQuery, DeviceState, MouseState, Keycode};
+use device_query::{DeviceEvents, DeviceQuery, DeviceState, MouseState, Keycode};
 
 use std::sync::mpsc;
 
@@ -37,21 +37,23 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
 {
     let err_fn = |err| eprintln!("an error occurrred on the output audio stream: {}", err);
 
-    let channels = config.channels as usize;
-    let sample_rate = config.sample_rate.0 as f32;
-    let mut sample_clock = 0f32;
-    let mut next_value = move || {
-        sample_clock = (sample_clock + 1.0) % sample_rate;
-        (sample_clock * 440.0 * 2.0 * std::f32::consts::PI / sample_rate).sin()
-    };
-
     let (midi_tx, midi_rx) = mpsc::sync_channel::<midi::KeyboardEvent>(1024);
 
     let midi_listen_thread = std::thread::spawn(move || {
         midi_listen(midi_tx);
     });
 
-    let synth = 
+    let channels = config.channels as usize;
+    let sample_rate = config.sample_rate.0 as f32;
+    let mut sample_clock = 0f32;
+
+    let mut synth = synth::Synth::new(midi_rx, sample_rate as u64, dsp::Waveform::Sine);
+
+    let mut next_value = move || {
+        //sample_clock = (sample_clock + 1.0) % sample_rate;
+        //(sample_clock * 440.0 * 2.0 * std::f32::consts::PI / sample_rate).sin()
+        synth.GetNext().left_phase as f32
+    };
 
     let stream = device.build_output_stream(
         config,
@@ -63,7 +65,11 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
 
     stream.play()?;
 
-    std::thread::sleep(std::time::Duration::from_secs(3));
+    //std::thread::sleep(std::time::Duration::from_secs(3));
+
+    loop {
+        synth.Update();
+    }
 
     Ok(())
 }
@@ -79,15 +85,16 @@ fn write_data<T: Sample>(data: &mut [T], channels: usize, next_sample: &mut dyn 
 
 fn midi_listen(midi_sender: mpsc::SyncSender<midi::KeyboardEvent>) {
     let device_state = DeviceState::new();
-    let _guard = device_state.on_key_down(|key| {
-        midi_sender.send(midi::KeyboardEvent{
-            key: key,
+    let key_up_sender = midi_sender.clone();
+    let _guard = device_state.on_key_down(move |key| {
+        let result = midi_sender.send(midi::KeyboardEvent{
+            key: *key,
             on: true,
         });
     });
-    let _guard = device_state.on_key_up(|key| {
-        midi_sender.send(midi::KeyboardEvent{
-            key: key,
+    let _guard = device_state.on_key_up(move |key| {
+        let result = key_up_sender.send(midi::KeyboardEvent{
+            key: *key,
             on: false,
         });
     });

@@ -8,9 +8,9 @@ fn NoteToHertz(note: i32) -> f64 {
     440f64 * 2f64.powf((note as f64 - 69f64) / 12f64)
 }
 
-struct Voice {
-    key: i32,
-    volume: f64,
+pub struct Voice {
+    pub key: i32,
+    pub volume: f64,
 }
 
 impl Voice {
@@ -19,26 +19,43 @@ impl Voice {
     }
 }
 
-struct Oscillator {
-    sample_rate: u64,
-    signal: dsp::Signal,
-    phase: f64,
-    time_step: f64,
-    step_increment: f64,
-    is_enabled: bool,
-    volume: f64,
-    waveform: dsp::Waveform,
+#[derive(Copy, Clone)]
+pub struct Oscillator {
+    pub sample_rate: u64,
+    pub signal: dsp::Signal,
+    pub phase: f64,
+    pub time_step: f64,
+    pub step_increment: f64,
+    pub is_enabled: bool,
+    pub volume: f64,    // TODO: this guy isn't being used anywhere right now
+    pub waveform: dsp::Waveform,
     //name: String,
 }
 
 impl Oscillator {
-    fn GetNext(&mut self, amplitude: f64, frequency: f64) -> dsp::Signal {
+    pub fn new(sample_rate: u64, waveform: dsp::Waveform) -> Self {
+        Oscillator{
+            sample_rate: sample_rate,
+            signal: dsp::Signal{
+                left_phase: 0f64,
+                right_phase: 0f64,
+            },
+            phase: 0f64,
+            time_step: 0f64,
+            step_increment: 0f64,
+            is_enabled: true,
+            volume: 0f64,
+            waveform: waveform,
+        }
+    }
+
+    pub fn GetNext(&mut self, amplitude: f64, frequency: f64) -> dsp::Signal {
         self.signal.left_phase = amplitude * f64::sin(2f64 * std::f64::consts::PI * self.time_step + self.phase);
         self.signal.right_phase = self.signal.left_phase;
         return self.signal;
     }
 
-    fn Step(&mut self) {
+    pub fn Step(&mut self) {
         self.time_step += self.step_increment;
 
         if self.time_step > (std::f64::consts::PI * 2f64) {
@@ -47,32 +64,44 @@ impl Oscillator {
     }
 }
 
-struct Synth {
-    pressed_keys: Vec<i32>,
-    voices: HashMap<i32, Voice>, // TODO: why do I have the key here for the note? Voice already has a note.
-    oscillators: [Oscillator; 3],
-    midi_buffer: mpsc::Receiver<midi::KeyboardEvent>,
+pub struct Synth {
+    pub pressed_keys: Vec<i32>,
+    pub voices: HashMap<i32, Voice>, // TODO: why do I have the key here for the note? Voice already has a note.
+    pub oscillators: [Oscillator; 3],
+    pub midi_buffer: mpsc::Receiver<midi::KeyboardEvent>,
 }
 
 impl Synth {
-    fn SetOscillator(&mut self, index: usize, waveform: dsp::Waveform) {
+    pub fn new(midi_rx: mpsc::Receiver<midi::KeyboardEvent>, sample_rate: u64, waveform: dsp::Waveform) -> Self {
+        Synth{
+            pressed_keys: Vec::new(),
+            voices: HashMap::new(),
+            oscillators: [
+                Oscillator::new(sample_rate, waveform);
+                3
+            ],
+            midi_buffer: midi_rx,
+        }
+    }
+
+    pub fn SetOscillator(&mut self, index: usize, waveform: dsp::Waveform) {
         self.oscillators[index].waveform = waveform;
     }
 
-    fn GetNext(&mut self) -> dsp::Signal {
+    pub fn GetNext(&mut self) -> dsp::Signal {
         let mut output = dsp::Signal{
             left_phase: 0f64,
             right_phase: 0f64,
         };
 
         for (note, voice) in &self.voices {
-            for osc in self.oscillators {
+            for osc in self.oscillators.iter_mut() {
                 let next = osc.GetNext(voice.volume, NoteToHertz(voice.key));
                 output.right_phase += next.right_phase;
             }
         }
 
-        for osc in self.oscillators {
+        for osc in self.oscillators.iter_mut() {
             osc.Step();
         }
 
@@ -82,7 +111,7 @@ impl Synth {
         return output;
     }
 
-    fn Update(&mut self) {
+    pub fn Update(&mut self) {
         let result = self.midi_buffer.try_recv();
         if result.is_err() {
             //if result.unwrap_err() == mpsc::TryRecvError::Empty {
