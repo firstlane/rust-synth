@@ -11,6 +11,6 @@ pub fn query_keys() {
 }
 
 pub struct KeyboardEvent {
-    key: device_query::Keycode,
-    on: bool,
+    pub key: device_query::Keycode,
+    pub on: bool,
 }

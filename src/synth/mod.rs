@@ -5,7 +5,7 @@ use std::sync::mpsc;
 use std::collections::HashMap;
 
 fn NoteToHertz(note: i32) -> f64 {
-    440f64 * 2f64.powf((note - 69f64) / 12f64)
+    440f64 * 2f64.powf((note as f64 - 69f64) / 12f64)
 }
 
 struct Voice {
@@ -49,7 +49,7 @@ impl Oscillator {
 
 struct Synth {
     pressed_keys: Vec<i32>,
-    voices: HashMap<i32, Voice>,
+    voices: HashMap<i32, Voice>, // TODO: why do I have the key here for the note? Voice already has a note.
     oscillators: [Oscillator; 3],
     midi_buffer: mpsc::Receiver<midi::KeyboardEvent>,
 }
@@ -85,13 +85,22 @@ impl Synth {
     fn Update(&mut self) {
         let result = self.midi_buffer.try_recv();
         if result.is_err() {
-            if result.unwrap_err() == mpsc::TryRecvError::Empty {
+            //if result.unwrap_err() == mpsc::TryRecvError::Empty {
 
-            } else if result.unwrap_err() == mpsc::TryRecvError::Disconnected {
+            //} else if result.unwrap_err() == mpsc::TryRecvError::Disconnected {
 
+            //}
+            //let err = result.unwrap_err();
+        }
+        else {
+            let midi_event = result.unwrap();
+
+            if midi_event.on {
+                self.voices.insert(midi_event.key as i32, Voice{ key: midi_event.key as i32, volume: 100f64 / 127f64 });
+            }
+            else {
+                self.voices.remove(&(midi_event.key as i32));
             }
         }
-
-        
     }
 }
