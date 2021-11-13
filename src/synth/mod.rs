@@ -8,6 +8,8 @@ fn NoteToHertz(note: i32) -> f64 {
     440f64 * 2f64.powf((note as f64 - 69f64) / 12f64)
 }
 
+const KEYS: &str = "ZSXCFVGBNJMK";
+
 pub struct Voice {
     pub key: i32,
     pub volume: f64,
@@ -123,6 +125,8 @@ impl Synth {
         }
         else {
             let midi_event = result.unwrap();
+
+            println!("Received from midi buffer");
 
             if midi_event.on {
                 self.voices.insert(midi_event.key as i32, Voice{ key: midi_event.key as i32, volume: 100f64 / 127f64 });

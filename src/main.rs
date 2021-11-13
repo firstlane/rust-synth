@@ -12,6 +12,7 @@ use cpal::{Data, Sample, SampleFormat};
 use device_query::{DeviceEvents, DeviceQuery, DeviceState, MouseState, Keycode};
 
 use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
 
 fn main() -> Result<(), anyhow::Error> {
     let host = cpal::default_host();
@@ -47,11 +48,13 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
     let sample_rate = config.sample_rate.0 as f32;
     let mut sample_clock = 0f32;
 
-    let mut synth = synth::Synth::new(midi_rx, sample_rate as u64, dsp::Waveform::Sine);
+    let synth = Arc::new(Mutex::new(synth::Synth::new(midi_rx, sample_rate as u64, dsp::Waveform::Sine)));
+    let synth_sampler = Arc::clone(&synth);
 
     let mut next_value = move || {
         //sample_clock = (sample_clock + 1.0) % sample_rate;
         //(sample_clock * 440.0 * 2.0 * std::f32::consts::PI / sample_rate).sin()
+        let mut synth = synth_sampler.lock().unwrap();
         synth.GetNext().left_phase as f32
     };
 
@@ -68,7 +71,8 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
     //std::thread::sleep(std::time::Duration::from_secs(3));
 
     loop {
-        synth.Update();
+        let mut synth_update = synth.lock().unwrap();
+        synth_update.Update();
     }
 
     Ok(())
@@ -87,12 +91,14 @@ fn midi_listen(midi_sender: mpsc::SyncSender<midi::KeyboardEvent>) {
     let device_state = DeviceState::new();
     let key_up_sender = midi_sender.clone();
     let _guard = device_state.on_key_down(move |key| {
+        println!("On key down: {}", key);
         let result = midi_sender.send(midi::KeyboardEvent{
             key: *key,
             on: true,
         });
     });
     let _guard = device_state.on_key_up(move |key| {
+        println!("On key up: {}", key);
         let result = key_up_sender.send(midi::KeyboardEvent{
             key: *key,
             on: false,
