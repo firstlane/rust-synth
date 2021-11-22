@@ -49,7 +49,7 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
     let sample_rate = config.sample_rate.0 as f32;
     let mut sample_clock = 0f32;
 
-    let synth = Arc::new(Mutex::new(synth::Synth::new(midi_rx, sample_rate as f64, dsp::Waveform::Sine)));
+    let synth = Arc::new(Mutex::new(synth::Synth::new(sample_rate as f64, dsp::Waveform::Sine)));
     let synth_sampler = Arc::clone(&synth);
 
     let mut next_value = move |synth: &mut MutexGuard<synth::Synth>| {
@@ -73,8 +73,22 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
     //std::thread::sleep(std::time::Duration::from_secs(3));
 
     loop {
-        let mut synth_update = synth.lock().unwrap();
-        synth_update.Update();
+        let result = midi_rx.try_recv();
+        if result.is_err() {
+            //if result.unwrap_err() == mpsc::TryRecvError::Empty {
+
+            //} else if result.unwrap_err() == mpsc::TryRecvError::Disconnected {
+
+            //}
+            //let err = result.unwrap_err();
+        }
+        else {
+            let midi_event = result.unwrap();
+
+            println!("Received from midi buffer");
+            let mut synth_update = synth.lock().unwrap();
+            synth_update.Update(midi_event);
+        }
     }
 
     Ok(())

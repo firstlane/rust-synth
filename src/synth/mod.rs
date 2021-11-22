@@ -70,11 +70,10 @@ pub struct Synth {
     pub pressed_keys: Vec<i32>,
     pub voices: HashMap<i32, Voice>, // TODO: why do I have the key here for the note? Voice already has a note.
     pub oscillators: [Oscillator; 3],
-    pub midi_buffer: mpsc::Receiver<midi::KeyboardEvent>,
 }
 
 impl Synth {
-    pub fn new(midi_rx: mpsc::Receiver<midi::KeyboardEvent>, sample_rate: f64, waveform: dsp::Waveform) -> Self {
+    pub fn new(sample_rate: f64, waveform: dsp::Waveform) -> Self {
         Synth{
             pressed_keys: Vec::new(),
             voices: HashMap::new(),
@@ -82,7 +81,6 @@ impl Synth {
                 Oscillator::new(sample_rate, waveform);
                 3
             ],
-            midi_buffer: midi_rx,
         }
     }
 
@@ -114,18 +112,18 @@ impl Synth {
         return output;
     }
 
-    pub fn Update(&mut self) {
-        let result = self.midi_buffer.try_recv();
-        if result.is_err() {
-            //if result.unwrap_err() == mpsc::TryRecvError::Empty {
+    pub fn Update(&mut self, midi_event: midi::KeyboardEvent) {
+        // let result = self.midi_buffer.try_recv();
+        // if result.is_err() {
+        //     //if result.unwrap_err() == mpsc::TryRecvError::Empty {
 
-            //} else if result.unwrap_err() == mpsc::TryRecvError::Disconnected {
+        //     //} else if result.unwrap_err() == mpsc::TryRecvError::Disconnected {
 
-            //}
-            //let err = result.unwrap_err();
-        }
-        else {
-            let midi_event = result.unwrap();
+        //     //}
+        //     //let err = result.unwrap_err();
+        // }
+        // else {
+            //let midi_event = result.unwrap();
 
             //println!("Received from midi buffer");
 
@@ -137,6 +135,6 @@ impl Synth {
                 //println!("Off");
                 self.voices.remove(&(midi_event.key as i32));
             }
-        }
+        //}
     }
 }
