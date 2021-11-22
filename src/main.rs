@@ -48,7 +48,7 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
     let sample_rate = config.sample_rate.0 as f32;
     let mut sample_clock = 0f32;
 
-    let synth = Arc::new(Mutex::new(synth::Synth::new(midi_rx, sample_rate as u64, dsp::Waveform::Sine)));
+    let synth = Arc::new(Mutex::new(synth::Synth::new(midi_rx, sample_rate as f64, dsp::Waveform::Sine)));
     let synth_sampler = Arc::clone(&synth);
 
     let mut next_value = move || {

@@ -23,7 +23,7 @@ impl Voice {
 
 #[derive(Copy, Clone)]
 pub struct Oscillator {
-    pub sample_rate: u64,
+    pub sample_rate: f64,
     pub signal: dsp::Signal,
     pub phase: f64,
     pub time_step: f64,
@@ -35,7 +35,7 @@ pub struct Oscillator {
 }
 
 impl Oscillator {
-    pub fn new(sample_rate: u64, waveform: dsp::Waveform) -> Self {
+    pub fn new(sample_rate: f64, waveform: dsp::Waveform) -> Self {
         Oscillator{
             sample_rate: sample_rate,
             signal: dsp::Signal{
@@ -44,7 +44,7 @@ impl Oscillator {
             },
             phase: 0f64,
             time_step: 0f64,
-            step_increment: 0f64,
+            step_increment: 1f64 / sample_rate,
             is_enabled: true,
             volume: 0f64,
             waveform: waveform,
@@ -74,7 +74,7 @@ pub struct Synth {
 }
 
 impl Synth {
-    pub fn new(midi_rx: mpsc::Receiver<midi::KeyboardEvent>, sample_rate: u64, waveform: dsp::Waveform) -> Self {
+    pub fn new(midi_rx: mpsc::Receiver<midi::KeyboardEvent>, sample_rate: f64, waveform: dsp::Waveform) -> Self {
         Synth{
             pressed_keys: Vec::new(),
             voices: HashMap::new(),
@@ -110,6 +110,7 @@ impl Synth {
         output.right_phase *= 0.1;
         //output.right_phase *= filter.process(0.1f64);
         output.left_phase = output.right_phase;
+        //println!("output: {}, {}", output.left_phase, output.right_phase);
         return output;
     }
 
@@ -129,9 +130,11 @@ impl Synth {
             println!("Received from midi buffer");
 
             if midi_event.on {
+                println!("On");
                 self.voices.insert(midi_event.key as i32, Voice{ key: midi_event.key as i32, volume: 100f64 / 127f64 });
             }
             else {
+                println!("Off");
                 self.voices.remove(&(midi_event.key as i32));
             }
         }
