@@ -96,7 +96,7 @@ impl Synth {
             right_phase: 0f64,
         };
 
-        for (note, voice) in &self.voices {
+        for (_note, voice) in &self.voices {
             for osc in self.oscillators.iter_mut() {
                 let next = osc.GetNext(voice.volume, NoteToHertz(voice.key));
                 output.right_phase += next.right_phase;
@@ -127,14 +127,14 @@ impl Synth {
         else {
             let midi_event = result.unwrap();
 
-            println!("Received from midi buffer");
+            //println!("Received from midi buffer");
 
             if midi_event.on {
-                println!("On");
+                //println!("On");
                 self.voices.insert(midi_event.key as i32, Voice{ key: midi_event.key as i32, volume: 100f64 / 127f64 });
             }
             else {
-                println!("Off");
+                //println!("Off");
                 self.voices.remove(&(midi_event.key as i32));
             }
         }
