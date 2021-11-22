@@ -2,6 +2,7 @@ extern crate anyhow;
 extern crate clap;
 extern crate cpal;
 extern crate device_query;
+extern crate maplit;
 
 mod midi;
 mod dsp;

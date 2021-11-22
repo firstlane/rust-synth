@@ -1,14 +1,45 @@
 use crate::dsp;
 use crate::midi;
 
+use maplit::hashmap;
+
 use std::sync::mpsc;
 use std::collections::HashMap;
+use std::array::IntoIter;
+use std::iter::FromIterator;
 
 fn NoteToHertz(note: i32) -> f64 {
     440f64 * 2f64.powf((note as f64 - 69f64) / 12f64)
 }
 
-const KEYS: &str = "ZSXCFVGBNJMK";
+//const KEYS: &device_query::Keycode = "OPZSXCFVGBNJMK";
+// const KEY_MAP: HashMap::<device_query::Keycode, i32>::from_iter(IntoIter::new([
+//     (device_query::Keycode::Z, 0x39i32),
+//     (device_query::Keycode::X, 0x39i32 + 1),
+//     (device_query::Keycode::C, 0x39i32 + 2),
+//     (device_query::Keycode::V, 0x39i32 + 3),
+//     (device_query::Keycode::B, 0x39i32 + 4),
+//     (device_query::Keycode::N, 0x39i32 + 5),
+//     (device_query::Keycode::M, 0x39i32 + 6),
+//     ]));
+// const KEY_MAP: HashMap::from([
+//     (device_query::Keycode::Z, i32); 5]),
+//     (device_query::Keycode::X, 0x39i32 + 1),
+//     (device_query::Keycode::C, 0x39i32 + 2),
+//     (device_query::Keycode::V, 0x39i32 + 3),
+//     (device_query::Keycode::B, 0x39i32 + 4),
+//     (device_query::Keycode::N, 0x39i32 + 5),
+//     (device_query::Keycode::M, 0x39i32 + 6),
+//     ]);
+// const KEY_MAP: maplit::hashmap!{
+//     device_query::Keycode::Z => 0x39i32,
+//     device_query::Keycode::X => 0x39i32 + 1,
+//     device_query::Keycode::C => 0x39i32 + 2,
+//     device_query::Keycode::V => 0x39i32 + 3,
+//     device_query::Keycode::B => 0x39i32 + 4,
+//     device_query::Keycode::N => 0x39i32 + 5,
+//     device_query::Keycode::M => 0x39i32 + 6,
+// };
 
 pub struct Voice {
     pub key: i32,
@@ -52,7 +83,7 @@ impl Oscillator {
     }
 
     pub fn GetNext(&mut self, amplitude: f64, frequency: f64) -> dsp::Signal {
-        self.signal.left_phase = amplitude * f64::sin(2f64 * std::f64::consts::PI * self.time_step + self.phase);
+        self.signal.left_phase = amplitude * f64::sin(2f64 * std::f64::consts::PI * frequency * self.time_step + self.phase);
         self.signal.right_phase = self.signal.left_phase;
         return self.signal;
     }
@@ -127,13 +158,41 @@ impl Synth {
 
             //println!("Received from midi buffer");
 
+            let mut key = 0x39i32;
+
+            match midi_event.key {
+                device_query::Keycode::Z => {
+                },
+                device_query::Keycode::X => {
+                    key = key + 1;
+                },
+                device_query::Keycode::C => {
+                    key = key + 2;
+                },
+                device_query::Keycode::V => {
+                    key = key + 3;
+                },
+                device_query::Keycode::B => {
+                    key = key + 4;
+                },
+                device_query::Keycode::N => {
+                    key = key + 5;
+                },
+                device_query::Keycode::M => {
+                    key = key + 6;
+                },
+                _ => {
+
+                }
+            }
+
             if midi_event.on {
                 //println!("On");
-                self.voices.insert(midi_event.key as i32, Voice{ key: midi_event.key as i32, volume: 100f64 / 127f64 });
+                self.voices.insert(key, Voice{ key: key as i32, volume: 100f64 / 127f64 });
             }
             else {
                 //println!("Off");
-                self.voices.remove(&(midi_event.key as i32));
+                self.voices.remove(&key);
             }
         //}
     }
