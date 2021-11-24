@@ -57,7 +57,7 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
         //sample_clock = (sample_clock + 1.0) % sample_rate;
         //(sample_clock * 440.0 * 2.0 * std::f32::consts::PI / sample_rate).sin()
         //let mut synth = synth_sampler.lock().unwrap();
-        synth.GetNext().left_phase as f32
+        synth.get_next().left_phase as f32
     };
 
     let stream = device.build_output_stream(
@@ -88,7 +88,7 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
 
             println!("Received from midi buffer");
             let mut synth_update = synth.lock().unwrap();
-            synth_update.Update(midi_event);
+            synth_update.update(midi_event);
         }
     }
 
@@ -96,7 +96,7 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
 }
 
 fn synth_get_next(synth: &mut MutexGuard<synth::Synth>) -> f32 {
-    synth.GetNext().left_phase as f32
+    synth.get_next().left_phase as f32
 }
 
 fn write_data<T: Sample>(data: &mut [T], channels: usize, next_sample: &mut dyn FnMut(&mut MutexGuard<synth::Synth>) -> f32, synth: &mut MutexGuard<synth::Synth>) {
