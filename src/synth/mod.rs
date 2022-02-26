@@ -16,7 +16,7 @@ pub struct Voice {
 }
 
 impl Voice {
-    fn is_active(&mut self) -> bool {
+    fn is_active(&self) -> bool {
         self.volume <= std::f64::EPSILON
     }
 }

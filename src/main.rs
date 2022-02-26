@@ -1,3 +1,7 @@
+#![forbid(unsafe_code)]
+#![cfg_attr(not(debug_assertions), deny(warnings))] // Forbid warnings in release builds
+#![warn(clippy::all, rust_2018_idioms)]
+
 extern crate anyhow;
 extern crate clap;
 extern crate cpal;
@@ -7,6 +11,7 @@ extern crate maplit;
 mod midi;
 mod dsp;
 mod synth;
+mod gui;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Data, Sample, SampleFormat};
@@ -16,6 +21,8 @@ use std::sync::mpsc;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time;
 
+// When compiling natively:
+#[cfg(not(target_arch = "wasm32"))]
 fn main() -> Result<(), anyhow::Error> {
     let host = cpal::default_host();
     let device = host.default_output_device()
@@ -27,6 +34,11 @@ fn main() -> Result<(), anyhow::Error> {
 //        .expect("no supported config?!")
 //        .with_max_sample_rate();
 //     let sample_format = supported_config.sample_format();
+
+    let gui_thread = std::thread::spawn(move || {
+        gui::start_gui();
+    });
+
     let config = device.default_output_config().unwrap();
 
     match config.sample_format() {
@@ -93,9 +105,9 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
     Ok(())
 }
 
-fn synth_get_next(synth: &mut MutexGuard<synth::Synth>) -> f32 {
-    synth.get_next().left_phase as f32
-}
+// fn synth_get_next(synth: &mut MutexGuard<synth::Synth>) -> f32 {
+//     synth.get_next().left_phase as f32
+// }
 
 fn write_data<T: Sample>(data: &mut [T], channels: usize, next_sample: &mut dyn FnMut(&mut MutexGuard<synth::Synth>) -> f32, synth: &mut MutexGuard<synth::Synth>) {
     for frame in data.chunks_mut(channels) {
