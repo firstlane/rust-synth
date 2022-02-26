@@ -11,3 +11,4 @@ clap = "3.0.0-beta.1"
 anyhow = "1.0.45"
 device_query = { git = "https://github.com/firstlane/device_query.git", rev = "48c7f2ca9521747785557ea1eb9e51ee788f5b3f" }
 maplit = "1.0.2"
+midir = "0.7.0"

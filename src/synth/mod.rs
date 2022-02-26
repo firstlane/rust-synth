@@ -108,7 +108,6 @@ impl Synth {
         output.right_phase *= 0.1;
         //output.right_phase *= filter.process(0.1f64);
         output.left_phase = output.right_phase;
-        //println!("output: {}, {}", output.left_phase, output.right_phase);
         return output;
     }
 
@@ -135,6 +134,12 @@ impl Synth {
             },
             device_query::Keycode::M => {
                 key = key + 6;
+            },
+            device_query::Keycode::O => {
+
+            },
+            device_query::Keycode::P => {
+
             },
             _ => {
 

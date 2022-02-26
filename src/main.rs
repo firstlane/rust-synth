@@ -71,8 +71,6 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
 
     stream.play()?;
 
-    //std::thread::sleep(std::time::Duration::from_secs(3));
-
     loop {
         let result = midi_rx.try_recv();
         if result.is_err() {
@@ -112,14 +110,12 @@ fn midi_listen(midi_sender: mpsc::SyncSender<midi::KeyboardEvent>) {
     let device_state = DeviceState::new();
     let key_up_sender = midi_sender.clone();
     let _guard = device_state.on_key_down(move |key| {
-        //println!("On key down: {}", key);
         let result = midi_sender.send(midi::KeyboardEvent{
             key: *key,
             on: true,
         });
     });
     let _guard = device_state.on_key_up(move |key| {
-        //println!("On key up: {}", key);
         let result = key_up_sender.send(midi::KeyboardEvent{
             key: *key,
             on: false,
