@@ -1,19 +1,21 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+// #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use eframe::{egui, epi};
 
 pub struct SynthApp {
-    name: String,
-    age: u32,
+    volume: f32,
 }
 
 impl Default for SynthApp {
     fn default() -> Self {
         SynthApp {
-            name: "Thompson".to_owned(),
-            age: 24,
+            volume: 100.0,
         }
     }
+}
+
+impl SynthApp {
+
 }
 
 impl epi::App for SynthApp {
@@ -24,15 +26,10 @@ impl epi::App for SynthApp {
     fn update(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("My egui Application");
-            ui.horizontal(|ui| {
-                ui.label("Your name: ");
-                ui.text_edit_singleline(&mut self.name);
-            });
-            ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
-            if ui.button("Click each year").clicked() {
-                self.age += 1;
-            }
-            ui.label(format!("Hello '{}', age {}", self.name, self.age));
+            ui.add(egui::Slider::new(&mut self.volume, 0.0..=100.0)
+                                .text("Volume")
+                                .clamp_to_range(true)
+                                .vertical());
         });
 
         // Resize the native window to be just the size we need it to be

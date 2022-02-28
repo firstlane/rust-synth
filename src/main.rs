@@ -2,11 +2,12 @@
 #![cfg_attr(not(debug_assertions), deny(warnings))] // Forbid warnings in release builds
 #![warn(clippy::all, rust_2018_idioms)]
 
-extern crate anyhow;
-extern crate clap;
-extern crate cpal;
-extern crate device_query;
-extern crate maplit;
+//extern crate anyhow;
+//extern crate clap;
+//extern crate cpal;
+//extern crate device_query;
+//extern crate maplit;
+//extern crate eframe;
 
 mod midi;
 mod dsp;
@@ -35,17 +36,26 @@ fn main() -> Result<(), anyhow::Error> {
 //        .with_max_sample_rate();
 //     let sample_format = supported_config.sample_format();
 
-    let gui_thread = std::thread::spawn(move || {
-        gui::start_gui();
+    // It seems egui does not like having the main GUI event loop
+    // inside a thread other than the main thread. The panic I received
+    // indicated that it was not good for cross-platform compatibility.
+    // let gui_thread = std::thread::spawn(move || {
+    //     gui::start_gui();
+    // });
+
+    let synth_thread = std::thread::spawn(move || {
+        let config = device.default_output_config().unwrap();
+
+        let result = match config.sample_format() {
+            cpal::SampleFormat::F32 => run::<f32>(&device, &config.into()),
+            cpal::SampleFormat::I16 => run::<i16>(&device, &config.into()),
+            cpal::SampleFormat::U16 => run::<u16>(&device, &config.into()),
+        };
     });
 
-    let config = device.default_output_config().unwrap();
+    gui::start_gui();
 
-    match config.sample_format() {
-        cpal::SampleFormat::F32 => run::<f32>(&device, &config.into()),
-        cpal::SampleFormat::I16 => run::<i16>(&device, &config.into()),
-        cpal::SampleFormat::U16 => run::<u16>(&device, &config.into()),
-    }
+    Ok(())
 }
 
 pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Result<(), anyhow::Error>
