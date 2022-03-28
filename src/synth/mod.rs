@@ -64,12 +64,17 @@ impl Oscillator {
             self.time_step = self.time_step - (std::f64::consts::PI * 2f64)
         }
     }
+
+    // pub fn get_components(&self) {
+
+    // }
 }
 
 pub struct Synth {
     pub pressed_keys: Vec<i32>,
     pub voices: HashMap<i32, Voice>, // TODO: why do I have the key here for the note? Voice already has a note.
     pub oscillators: [Oscillator; 3],
+    pub master_volume: f64,
 }
 
 impl Synth {
@@ -81,6 +86,7 @@ impl Synth {
                 Oscillator::new(sample_rate, waveform);
                 3
             ],
+            master_volume: 100.0,
         }
     }
 
@@ -105,7 +111,7 @@ impl Synth {
             osc.step();
         }
 
-        output.right_phase *= 0.1;
+        output.right_phase *= self.master_volume * 0.1; // TODO: Can the 0.1 be removed?
         //output.right_phase *= filter.process(0.1f64);
         output.left_phase = output.right_phase;
         return output;
@@ -153,4 +159,10 @@ impl Synth {
             self.voices.remove(&key);
         }
     }
+
+    // pub fn get_components(&self) -> <SomeWrapperType> {
+    //     for osc in oscillators.iter_mut() {
+
+    //     }
+    // }
 }

@@ -73,6 +73,12 @@ pub fn run<T: Sample>(device: &cpal::Device, config: &cpal::StreamConfig) -> Res
     let mut sample_clock = 0f32;
 
     let synth = Arc::new(Mutex::new(synth::Synth::new(sample_rate as f64, dsp::Waveform::Sine)));
+
+    // {
+    //     let synth_data = synth.lock().unwrap();
+    //     synth_data.get_components();
+    // }
+
     let synth_sampler = Arc::clone(&synth);
 
     let mut next_value = move |synth: &mut MutexGuard<synth::Synth>| {

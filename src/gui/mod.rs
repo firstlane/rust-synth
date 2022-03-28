@@ -14,10 +14,6 @@ impl Default for SynthApp {
     }
 }
 
-impl SynthApp {
-
-}
-
 impl epi::App for SynthApp {
     fn name(&self) -> &str {
         "My egui App"
